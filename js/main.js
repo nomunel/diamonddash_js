@@ -7,17 +7,17 @@ var DIAMONDDASH = DIAMONDDASH || {};
  * BlockのModel
  * 
  * BlockModelで初期値を設定
- * BlockCollectionで、Blockのtype（色）を設定
+ * BlockCollectionに、modelの更新処理を記述
  */
 (function(window) {
     var ns = window.DIAMONDDASH || {};
 
     ns.BlockModel = Backbone.Model.extend({
         defaults: {
-            blockColor: 0,        //0:赤、1:黄、2:紫、3:緑、4:青
-            blockX: 0,            //ブロックのX座標（0〜6）
-            blockY: 0,             //ブロックのY座標（0〜7）
-            id: '0_0',            //ブロックの座標を表すID
+            blockColor: 0,      //0:赤、1:黄、2:紫、3:緑、4:青
+            blockX: 0,          //ブロックのX座標（0〜6）
+            blockY: 0,          //ブロックのY座標（0〜7）
+            id: '0_0',          //ブロックの座標を表すID
             erasable: false,    //消せるかどうか
             group: undefined    //消せるブロックグループ
         }
@@ -49,7 +49,7 @@ var DIAMONDDASH = DIAMONDDASH || {};
         },
         //ブロックが消えるかどうか判定
         updateErasables: function() {
-            var group = 0;                //グループID定義
+            var group = 0;                  //グループID定義
             var checkFlg = new Array(7);    //チェック済みか管理するフラグ配列定義（7×8）
             for(var i = 0; i < 7; i++) {
                 checkFlg[i] = new Array(8);
@@ -65,7 +65,7 @@ var DIAMONDDASH = DIAMONDDASH || {};
             var firstFlg = 0;
             for(var y = 0; y < 8; y ++) {
                 for(var x = 0; x < 7; x ++) {
-                    var sameBlockCount = 0;        //繋がっている同じブロックの総数
+                    var sameBlockCount = 0; //繋がっている同じブロックの総数
                     //周りのブロック判定メソッド
                     if(this.models[x][y] != undefined) {
                         (function checkAroundBlock(self,x,y) {
@@ -244,7 +244,7 @@ var DIAMONDDASH = DIAMONDDASH || {};
             var y_x = [];
             for(var i = 0; i <= 6; i++) {
                x[i] = 0;    //各x座標毎の落下数を入れる変数定義
-               y_x[i] = [];  //消えたブロックのあるx座標の内、最小のy座標の候補を入れる変数
+               y_x[i] = []; //消えたブロックのあるx座標の内、最小のy座標の候補を入れる変数
             }
             _.each(deletedBlocks,function(num) {
                 switch(num[0]) {
