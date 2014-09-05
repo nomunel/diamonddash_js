@@ -7,67 +7,67 @@ var DIAMONDDASH = DIAMONDDASH || {};
  * BlockのModel
  * 
  * BlockModelで初期値を設定
- * BlockCollectionで、Blockのtype（色）を設定
+ * BlockCollectionに、modelの更新処理を記述
  */
 (function(window) {
     var ns = window.DIAMONDDASH || {};
 
     ns.BlockModel = Backbone.Model.extend({
         defaults: {
-            blockColor: 0,		//0:赤、1:黄、2:紫、3:緑、4:青
-            blockX: 0,			//ブロックのX座標（0〜6）
-            blockY: 0, 			//ブロックのY座標（0〜7）
-            id: '0_0',			//ブロックの座標を表すID
-            erasable: false,	//消せるかどうか
-            group: undefined	//消せるブロックグループ
+            blockColor: 0,      //0:赤、1:黄、2:紫、3:緑、4:青
+            blockX: 0,          //ブロックのX座標（0〜6）
+            blockY: 0,          //ブロックのY座標（0〜7）
+            id: '0_0',          //ブロックの座標を表すID
+            erasable: false,    //消せるかどうか
+            group: undefined    //消せるブロックグループ
         }
     });
 
     ns.BlockCollection = Backbone.Collection.extend({
         model: ns.BlockModel,
         properties: {
-            blockListX: 9,   	//列の数
-            blockListY: 9,   	//行の数
+            blockListX: 7,       //列の数
+            blockListY: 8,       //行の数
             delteBlocksCount: 0 //消したブロックの総数
         },
         initialize: function() {
-            this.collection = this.setBlockColor();
-            this.setErasables(this);
+            this.collection = this.createBlockModels();
+            this.updateErasables();
         },
         //ブロックカラーをランダムで設定するメソッド
-        setBlockColor: function() {
-        	for(var x = 0; x < 7; x ++) {
-        		this.models[x] = [];
-	        	for(var y = 0; y < 8; y ++) {
-	        		id = x + (y * 7);
-	        		var r = Math.round(Math.random() * 4);
-	        		var blockModel = new ns.BlockModel({id: x +'_'+ y, blockColor: r, blockX: x, blockY: y});
-	        		this.models[x][y] = blockModel;
-	        	}
-        	}
-        	return this;
+        createBlockModels: function() {
+            for(var x = 0; x < 7; x ++) {
+                this.models[x] = [];
+                for(var y = 0; y < 8; y ++) {
+                    id = x + (y * 7);
+                    var r = Math.round(Math.random() * 4);
+                    var blockModel = new ns.BlockModel({id: x +'_'+ y, blockColor: r, blockX: x, blockY: y});
+                    this.models[x][y] = blockModel;
+                }
+            }
+            return this;
         },
         //ブロックが消えるかどうか判定
-        setErasables: function(self) {
-        	var group = 0;				//グループID定義
-        	var checkFlg = new Array(7);	//チェック済みか管理するフラグ配列定義（7×8）
-        	for(var i = 0; i < 7; i++) {
-        		checkFlg[i] = new Array(8);
-        	}
+        updateErasables: function() {
+            var group = 0;                  //グループID定義
+            var checkFlg = new Array(7);    //チェック済みか管理するフラグ配列定義（7×8）
+            for(var i = 0; i < 7; i++) {
+                checkFlg[i] = new Array(8);
+            }
             for(var y = 0; y < 8; y ++) {
                 for(var x = 0; x < 7; x ++) {
-                    if(self.models[x][y] != undefined) {
-                       self.models[x][y].set('erasable', false);
-                       self.models[x][y].set('group', undefined);
+                    if(this.models[x][y] != undefined) {
+                       this.models[x][y].set('erasable', false);
+                       this.models[x][y].set('group', undefined);
                     }
                 }
             }
             var firstFlg = 0;
-        	for(var y = 0; y < 8; y ++) {
-	        	for(var x = 0; x < 7; x ++) {
-			        var sameBlockCount = 0;		//繋がっている同じブロックの総数
-			        //周りのブロック判定メソッド
-                    if(self.models[x][y] != undefined) {
+            for(var y = 0; y < 8; y ++) {
+                for(var x = 0; x < 7; x ++) {
+                    var sameBlockCount = 0; //繋がっている同じブロックの総数
+                    //周りのブロック判定メソッド
+                    if(this.models[x][y] != undefined) {
                         (function checkAroundBlock(self,x,y) {
                             //上のブロックと比較
                             if(y > 0 && self.models[x][y - 1] != undefined) {
@@ -129,14 +129,14 @@ var DIAMONDDASH = DIAMONDDASH || {};
                                 self.models[x][y].set('group', group);
                                 self.models[x][y].set('erasable', true);
                             }
-                        })(self,x,y);
+                        })(this,x,y);
                     }
-			        if(sameBlockCount >= 3) {
-			        	group ++;
-			        }
-		        	// console.log('座標' + x + ' ' + y + ' erasable = ' + self.models[x][y].get('erasable'));
-	        	}
-        	}
+                    if(sameBlockCount >= 3) {
+                        group ++;
+                    }
+                    // console.log('座標' + x + ' ' + y + ' erasable = ' + self.models[x][y].get('erasable'));
+                }
+            }
         }
     });
 })(this);
@@ -186,40 +186,41 @@ var DIAMONDDASH = DIAMONDDASH || {};
             this.render();
         },
         render: function() {
-        	this.blockListSet();
+            this.blockListSet();
         },
         //ブロックの初期配置処理
         blockListSet: function() {
-        	var lis = [];
-        	id = 0;
-        	for(var y = 0; y < 8; y ++) {
-	        	for(var x = 0; x < 7; x ++) {
-	        		lis[id] = new ns.BlockView(this.collection.models[x][y]);
-	                lis[id].$el.addClass("type_" + lis[id].attributes.blockColor);
+            var lis = [];
+            id = 0;
+            for(var y = 0; y < 8; y ++) {
+                for(var x = 0; x < 7; x ++) {
+                    lis[id] = new ns.BlockView(this.collection.models[x][y]);
+                    lis[id].$el.addClass("type_" + lis[id].attributes.blockColor);
 
                     //消えるブロックを分かり易くする一時処理（デバッグ用）
                     // if(lis[id].attributes.erasable == true) {
                     //     lis[id].$el.addClass('erasable');
                     // }
-
-	                lis[id].on('blockClick', $.proxy(this.blockGroupDelete, this.collection));
-	        		this.$el.append(lis[id].el);
-	        		id ++;
-	        	}
-        	}
+                    lis[id].on('blockClick', $.proxy(this.blockGroupDelete, this));
+                    this.$el.append(lis[id].el);
+                    id ++;
+                }
+            }
         },
         //３つ以上隣接してるブロックグループを消去
         blockGroupDelete: function(event, self) {
-        	// console.log('group=' + self.attributes.group);
-        	// console.log('消える？' + self.attributes.erasable);
+            // console.log('group=' + self.attributes.group);
+            // console.log('消える？' + self.attributes.erasable);
+            // console.log(this);
+            // console.log(self);
             var deletedBlocks = []; //消したブロックの座標情報
             var i = 0;
-        	for(var y = 0; y < 8; y ++) {
-	        	for(var x = 0; x < 7; x ++) {
-	        		// console.log(this.models[x][y].get('group'));
-                    if(this.models[x][y] != undefined) {
-                        if(this.models[x][y].get('group') != undefined) {
-                            if(this.models[x][y].get('group') == self.attributes.group && this.models[x][y].get('erasable') == true) {
+            for(var y = 0; y < 8; y ++) {
+                for(var x = 0; x < 7; x ++) {
+                    // console.log(this.models[x][y].get('group'));
+                    if(this.collection.models[x][y] != undefined) {
+                        if(this.collection.models[x][y].get('group') != undefined) {
+                            if(this.collection.models[x][y].get('group') == self.attributes.group && this.collection.models[x][y].get('erasable') == true) {
                                 $('#' + x + '_' + y).addClass('hidden');
                                 deletedBlocks[i] = [];
                                 deletedBlocks[i].push(x,y);
@@ -227,75 +228,84 @@ var DIAMONDDASH = DIAMONDDASH || {};
                             } 
                         }
                     }
-	        	}
-        	}
-            ns.BlockListView.prototype.blockFall(this, deletedBlocks, self);
+                }
+            }
+            this.blockFall(deletedBlocks, self);
         },
         //ブロックの落下処理
-        blockFall: function(self, deletedBlocks, view) {
-            // console.log(self);
-            // console.log(deletedBlocks);
-            var x0 = 0, x1 = 0, x2 = 0, x3 = 0, x4 = 0, x5 = 0, x6 = 0;         //各x座標毎の落下数を入れる変数定義
-            var y_x0 = [], y_x1 = [], y_x2 = [], y_x3 = [], y_x4 = [], y_x5 = [], y_x6 = []; //消えたブロックのあるx座標の内、最小のy座標の候補を入れる変数
-            _.each(deletedBlocks,function(num ,index) {
+        blockFall: function(deletedBlocks, view) {
+            self = this;
+            var blockXY = this.setFallBlock(deletedBlocks);
+            this.blockFallRender(view, blockXY);
+        },
+        //X座標毎に落下するブロックの数と座標を設定する処理
+        setFallBlock: function(deletedBlocks) {
+            var x = [];
+            var y_x = [];
+            for(var i = 0; i <= 6; i++) {
+               x[i] = 0;    //各x座標毎の落下数を入れる変数定義
+               y_x[i] = []; //消えたブロックのあるx座標の内、最小のy座標の候補を入れる変数
+            }
+            _.each(deletedBlocks,function(num) {
                 switch(num[0]) {
                     case 0:
-                        x0 ++;
-                        y_x0.push(num[1]);
+                        x[0] ++;
+                        y_x[0].push(num[1]);
                         break;
                     case 1:
-                        x1 ++;
-                        y_x1.push(num[1]);
+                        x[1] ++;
+                        y_x[1].push(num[1]);
                         break;
                     case 2:
-                        x2 ++;
-                        y_x2.push(num[1]);
+                        x[2] ++;
+                        y_x[2].push(num[1]);
                         break;
                     case 3:
-                        x3 ++;
-                        y_x3.push(num[1]);
+                        x[3] ++;
+                        y_x[3].push(num[1]);
                         break;
                     case 4:
-                        x4 ++;
-                        y_x4.push(num[1]);
+                        x[4] ++;
+                        y_x[4].push(num[1]);
                         break;
                     case 5:
-                        x5 ++;
-                        y_x5.push(num[1]);
+                        x[5] ++;
+                        y_x[5].push(num[1]);
                         break;
                     case 6:
-                        x6 ++;
-                        y_x6.push(num[1]);
+                        x[6] ++;
+                        y_x[6].push(num[1]);
                         break;
                 }
             });
-            // for(i = 0; i < 7; i++) {
-            //     if(eval('x'+ i) != 0) {
-            //         console.log('x' + i + 'の消えたブロック数は' + eval('x'+i));
-            //         console.log('x' + i + 'の消えたブロックの内、一番上のもののY座標は' + _.min(eval('y_x' + i)));
-            //         console.log('x' + i + 'の消えたブロックの内、一番下のもののY座標は' + _.max(eval('y_x' + i)));
-            //     }
-            // }
-
-            for(n = 0; n < 7; n ++) {
-                if(eval('x'+ n) != 0) {
+            return [x, y_x];
+        },
+        //実際の落下処理（レンダリングとmodelの更新）
+        blockFallRender: function(view, blockXY) {
+            var fallY_max = 0;  //そのX座標上で消えるブロック内で最大のY座標
+            var fallY_now = 0;  //チェック中のブロックのY座標を入れる変数
+            var fallY_min = 0;  //そのX座標上で消えるブロック内で最小のY座標-1を入れる変数
+            var fallCount = 0;  //そのX軸上で落としたブロックの数を入れる変数
+            var tempY = 0;      //元のY位置を記憶しておく変数
+            for(n = 0; n <= 6; n ++) {
+                if(blockXY[0][n] != 0) {
                     //コの字型にブロックを消した際の処理
-                    var fallY_max = _.max(eval('y_x' + n)); //そのX座標上で消えるブロック内で最大のY座標
-                    var fallY_now = fallY_max;
-                    var fallY_min = _.min(eval('y_x' + n)) - 1; //そのX座標上で消えるブロック内で最小のY座標-1
-                    var fallCount = 0;  //そのX軸上で落としたブロックの数
+                    fallY_max = _.max(blockXY[1][n]); //そのX座標上で消えるブロック内で最大のY座標
+                    fallY_now = fallY_max;
+                    fallY_min = _.min(blockXY[1][n]) - 1; //そのX座標上で消えるブロック内で最小のY座標-1
+                    fallCount = 0;  //そのX軸上で落としたブロックの数
                     while(fallY_now > fallY_min) {
-                        if(self.models[n][fallY_now] != undefined) {
-                            if(self.models[n][fallY_now].get('group') != view.attributes.group) {
-                                var tempY = $('#'+n+'_'+fallY_now).css('top');  //元のY位置を取得
+                        if(self.collection.models[n][fallY_now] != undefined) {
+                            if(self.collection.models[n][fallY_now].get('group') != view.attributes.group) {
+                                tempY = $('#'+n+'_'+fallY_now).css('top');  //元のY位置を取得
                                 tempY = Number(tempY.slice(0, -2));
-                                $('#'+n+'_'+fallY_now).css('top', tempY + (39 * (fallY_max - fallY_now - fallCount)));
+                                $('#'+n+'_'+fallY_now).css('top', tempY + (40 * (fallY_max - fallY_now - fallCount)));
                                 $('#'+n+'_'+fallY_now).attr('id', n + '_' + (fallY_max - fallCount)); //IDを更新
-                                var tempY = self.models[n][fallY_now].get('blockY')
-                                self.models[n][fallY_now].set('blockY', (fallY_max - fallCount));     //modelのY座標を更新
-                                self.models[n][fallY_now].set('id', n + '_' + (fallY_max - fallCount));     //modelのIDを更新
-                                self.models[n][(fallY_max - fallCount)] = self.models[n][fallY_now];  //落下先のブロックのmodelを上書き
-                                delete self.models[n][fallY_now];   //落下元のブロックのmodelを削除
+                                tempY = self.collection.models[n][fallY_now].get('blockY')
+                                self.collection.models[n][fallY_now].set('blockY', (fallY_max - fallCount));     //modelのY座標を更新
+                                self.collection.models[n][fallY_now].set('id', n + '_' + (fallY_max - fallCount));     //modelのIDを更新
+                                self.collection.models[n][(fallY_max - fallCount)] = self.collection.models[n][fallY_now];  //落下先のブロックのmodelを上書き
+                                delete self.collection.models[n][fallY_now];   //落下元のブロックのmodelを削除
                                 fallCount ++;
                             }
                         }
@@ -303,22 +313,22 @@ var DIAMONDDASH = DIAMONDDASH || {};
                     }
                     while(fallY_min >= 0) {
                         //そのX座標のブロックの内、消えたブロックの最小のYより上にあるブロックに対する落下処理
-                        if(self.models[n][fallY_min] != undefined) {
-                            var tempY = $('#'+n+'_'+fallY_min).css('top');  //元のY位置を取得
+                        if(self.collection.models[n][fallY_min] != undefined) {
+                            tempY = $('#'+n+'_'+fallY_min).css('top');  //元のY位置を取得
                             tempY = Number(tempY.slice(0, -2));
-                            $('#'+n+'_'+fallY_min).css('top', tempY + (39 * eval('x'+n)));
-                            $('#'+n+'_'+fallY_min).attr('id', n + '_' + (fallY_min + eval('x'+n))); //IDを更新
-                            var tempY = self.models[n][fallY_min].get('blockY')
-                            self.models[n][fallY_min].set('blockY', (fallY_min + eval('x'+n)));     //modelのY座標を更新
-                            self.models[n][fallY_min].set('id', n + '_' + (fallY_min + eval('x'+n)));     //modelのIDを更新
-                            self.models[n][(fallY_min + eval('x'+n))] = self.models[n][fallY_min];  //落下先のブロックのmodelを上書き
-                            delete self.models[n][fallY_min];   //落下元のブロックのmodelを削除
+                            $('#'+n+'_'+fallY_min).css('top', tempY + (40 * blockXY[0][n]));
+                            $('#'+n+'_'+fallY_min).attr('id', n + '_' + (fallY_min + blockXY[0][n])); //IDを更新
+                            tempY = self.collection.models[n][fallY_min].get('blockY')
+                            self.collection.models[n][fallY_min].set('blockY', (fallY_min + blockXY[0][n]));     //modelのY座標を更新
+                            self.collection.models[n][fallY_min].set('id', n + '_' + (fallY_min + blockXY[0][n]));     //modelのIDを更新
+                            self.collection.models[n][(fallY_min + blockXY[0][n])] = self.collection.models[n][fallY_min];  //落下先のブロックのmodelを上書き
+                            delete self.collection.models[n][fallY_min];   //落下元のブロックのmodelを削除
                         }
                         fallY_min --;
                     }
                 }
             }
-            ns.BlockCollection.prototype.setErasables(self);
+            self.collection.updateErasables();            
         }
     });
 })(this);
